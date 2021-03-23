@@ -207,7 +207,6 @@ public class RemoveCommand extends PKCommand {
 			l.add("Sand");
 			l.add("Spiritual");
 			l.add("BlueFire");
-			l.add("Energy reading");
 
 			for (final SubElement e : Element.getAddonSubElements()) {
 				l.add(e.getName());
