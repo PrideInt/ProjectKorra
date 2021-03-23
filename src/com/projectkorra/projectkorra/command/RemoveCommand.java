@@ -57,7 +57,13 @@ public class RemoveCommand extends PKCommand {
 								senderBPlayer.getSubElements().remove(e);
 								GeneralMethods.saveSubElements(senderBPlayer);
 								GeneralMethods.removeUnusableAbilities(sender.getName());
-								GeneralMethods.sendBrandingMessage(sender, e.getColor() + this.succesfullyRemovedElementSelf.replace("{element}", e.toString() + e.getType().getBending()).replace("{sender}", ChatColor.DARK_AQUA + sender.getName() + e.getColor()));
+								
+								final String prefix = e.getName().toString();
+								final String suffix = GeneralMethods.getElementSuffix(e, false);
+								
+								final String display = (e == SubElement.HEALING ? prefix.substring(1, 4) : prefix) + suffix;
+								
+								GeneralMethods.sendBrandingMessage(sender, this.succesfullyRemovedElementSelf.replace("{element}", display).replace("{sender}", ChatColor.DARK_AQUA + sender.getName()), e);
 								Bukkit.getServer().getPluginManager().callEvent(new PlayerChangeSubElementEvent(sender, player, (SubElement) e, com.projectkorra.projectkorra.event.PlayerChangeSubElementEvent.Result.REMOVE));
 							} else {
 								GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + this.wrongElementSelf);
@@ -72,8 +78,13 @@ public class RemoveCommand extends PKCommand {
 								GeneralMethods.saveElements(senderBPlayer);
 								GeneralMethods.saveSubElements(senderBPlayer);
 								GeneralMethods.removeUnusableAbilities(sender.getName());
+								
+								final String prefix = e.getName().toString();
+								final String suffix = GeneralMethods.getElementSuffix(e, true);
+								
+								final String display = (e == SubElement.HEALING ? prefix.substring(1, 4) : prefix) + suffix;
 
-								GeneralMethods.sendBrandingMessage(sender, e.getColor() + this.succesfullyRemovedElementSelf.replace("{element}", e.toString() + e.getType().getBending()));
+								GeneralMethods.sendBrandingMessage(sender, this.succesfullyRemovedElementSelf.replace("{element}", display), e);
 								Bukkit.getServer().getPluginManager().callEvent(new PlayerChangeElementEvent(sender, (Player) sender, e, Result.REMOVE));
 								return;
 							} else {
@@ -123,8 +134,14 @@ public class RemoveCommand extends PKCommand {
 				}
 
 				GeneralMethods.removeUnusableAbilities(player.getName());
-				GeneralMethods.sendBrandingMessage(player, e.getColor() + this.succesfullyRemovedElementTarget.replace("{element}", e.toString() + e.getType().getBending()).replace("{sender}", ChatColor.DARK_AQUA + sender.getName() + e.getColor()));
-				GeneralMethods.sendBrandingMessage(sender, e.getColor() + this.succesfullyRemovedElementTargetConfirm.replace("{element}", e.toString() + e.getType().getBending()).replace("{target}", ChatColor.DARK_AQUA + player.getName() + e.getColor()));
+				
+				final String prefix = e.getName().toString();
+				final String suffix = GeneralMethods.getElementSuffix(e, false);
+				
+				final String display = (e == SubElement.HEALING ? prefix.substring(1, 4) : prefix) + suffix;
+				
+				GeneralMethods.sendBrandingMessage(player, this.succesfullyRemovedElementTarget.replace("{element}", display).replace("{sender}", ChatColor.DARK_AQUA + sender.getName()), e);
+				GeneralMethods.sendBrandingMessage(sender, this.succesfullyRemovedElementTargetConfirm.replace("{element}", display).replace("{target}", ChatColor.DARK_AQUA + player.getName()), e);
 				Bukkit.getServer().getPluginManager().callEvent(new PlayerChangeElementEvent(sender, player, e, Result.REMOVE));
 				return;
 			}
@@ -190,6 +207,7 @@ public class RemoveCommand extends PKCommand {
 			l.add("Sand");
 			l.add("Spiritual");
 			l.add("BlueFire");
+			l.add("Energy reading");
 
 			for (final SubElement e : Element.getAddonSubElements()) {
 				l.add(e.getName());
