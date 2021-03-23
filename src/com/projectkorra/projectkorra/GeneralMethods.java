@@ -74,7 +74,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
-import org.bukkit.boss.BossBar;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
@@ -219,7 +218,7 @@ public class GeneralMethods {
 		bPlayer.getAbilities().put(slot, ability);
 
 		if (coreAbil != null) {
-			GeneralMethods.sendBrandingMessage(player, ConfigManager.languageConfig.get().getString("Commands.Bind.SuccessfullyBound").replace("{ability}", ability).replace("{slot}", String.valueOf(slot)), coreAbil.getElement());
+			GeneralMethods.sendBrandingMessage(player, coreAbil.getElement().getColor() + ConfigManager.languageConfig.get().getString("Commands.Bind.SuccessfullyBound").replace("{ability}", ability).replace("{slot}", String.valueOf(slot)));
 		}
 		saveAbility(bPlayer, slot, ability);
 	}
@@ -448,9 +447,6 @@ public class GeneralMethods {
 						}
 						if (split[0].contains("c")) {
 							subelements.add(Element.COMBUSTION);
-						}
-						if (split[0].contains("er")) {
-							subelements.add(Element.READING);
 						}
 						if (split[0].contains("l")) {
 							subelements.add(Element.LIGHTNING);
@@ -683,15 +679,7 @@ public class GeneralMethods {
 			displayedMessage = "";
 		}
 
-		BossBar removebar = PKListener.getBossBar().get(player.getUniqueId().toString());
-		
-		if (PKListener.getBossBar().containsKey(player.getUniqueId().toString())) {
-			if (displayedMessage == null || displayedMessage.isEmpty() || displayedMessage.equalsIgnoreCase("") || !bPlayer.isToggled()) {
-            	removebar.setVisible(false);
-            	removebar.removeAll();
-            	PKListener.getBossBar().remove(removebar);
-    		}
-		}
+		ActionBar.sendActionBar(displayedMessage, player);
 	}
 
 	public static float getAbsorbationHealth(final Player player) {
