@@ -142,9 +142,9 @@ public class BendingManager implements Runnable {
 		try (MCTiming timing = this.ACTIONBAR_STATUS_TIMING.startTiming()) {
 			for (final Player player : Bukkit.getOnlinePlayers()) {
 				if (Bloodbending.isBloodbent(player)) {
-					ActionBar.sendActionBar(Element.BLOOD.getColor() + "* Bloodbent *", player);
+					ActionBar.sendActionBar("* Bloodbent *", Element.BLOOD.getColor(), player);
 				} else if (MetalClips.isControlled(player)) {
-					ActionBar.sendActionBar(Element.METAL.getColor() + "* MetalClipped *", player);
+					ActionBar.sendActionBar("* MetalClipped *", Element.METAL.getColor(), player);
 				}
 			}
 		}
