@@ -94,14 +94,13 @@ public class ToggleCommand extends PKCommand {
 					return;
 				}
 				final Element e = Element.fromString(args.get(0));
-				final ChatColor color = e != null ? e.getColor() : null;
 				final BendingPlayer bPlayer = BendingPlayer.getBendingPlayer(sender.getName());
 				bPlayer.toggleElement(e);
 
 				if (bPlayer.isElementToggled(e)) {
-					GeneralMethods.sendBrandingMessage(sender, color + this.toggledOnSingleElement.replace("{element}", e.getName() + (e.getType() != null ? e.getType().getBending() : "")));
+					GeneralMethods.sendBrandingMessage(sender, this.toggledOnSingleElement.replace("{element}", e.getName().toString() + (e.getType() != null ? e.getType().getBending() : "")), ConfigManager.languageConfig.get().getBoolean("Chat.UseHex") ? e : null);
 				} else {
-					GeneralMethods.sendBrandingMessage(sender, color + this.toggledOffSingleElement.replace("{element}", e.getName() + (e.getType() != null ? e.getType().getBending() : "")));
+					GeneralMethods.sendBrandingMessage(sender, this.toggledOffSingleElement.replace("{element}", e.getName().toString() + (e.getType() != null ? e.getType().getBending() : "")), ConfigManager.languageConfig.get().getBoolean("Chat.UseHex") ? e : null);
 				}
 			} else {
 				this.help(sender, false);
@@ -122,14 +121,13 @@ public class ToggleCommand extends PKCommand {
 			}
 			final Element e = Element.fromString(args.get(0));
 			final BendingPlayer bPlayer = BendingPlayer.getBendingPlayer(target.getName());
-			final ChatColor color = e != null ? e.getColor() : null;
 
 			if (bPlayer.isElementToggled(e)) {
-				GeneralMethods.sendBrandingMessage(sender, color + this.toggledOffOtherElementConfirm.replace("{target}", target.getName()).replace("{element}", e.getName() + (e.getType() != null ? e.getType().getBending() : "")));
-				GeneralMethods.sendBrandingMessage(target, color + this.toggledOffOtherElement.replace("{element}", e.getName() + (e.getType() != null ? e.getType().getBending() : "")).replace("{sender}", ChatColor.DARK_AQUA + sender.getName()));
+				GeneralMethods.sendBrandingMessage(sender, this.toggledOffOtherElementConfirm.replace("{target}", target.getName()).replace("{element}", e.getName().toString() + (e.getType() != null ? e.getType().getBending() : "")), ConfigManager.languageConfig.get().getBoolean("Chat.UseHex") ? e : null);
+				GeneralMethods.sendBrandingMessage(target, this.toggledOffOtherElement.replace("{element}", e.getName().toString() + (e.getType() != null ? e.getType().getBending() : "")).replace("{sender}", ChatColor.DARK_AQUA + sender.getName()), ConfigManager.languageConfig.get().getBoolean("Chat.UseHex") ? e : null);
 			} else {
-				GeneralMethods.sendBrandingMessage(sender, color + this.toggledOnOtherElementConfirm.replace("{target}", target.getName()).replace("{element}", e.getName() + (e.getType() != null ? e.getType().getBending() : "")));
-				GeneralMethods.sendBrandingMessage(target, color + this.toggledOnOtherElement.replace("{element}", e.getName() + (e.getType() != null ? e.getType().getBending() : "")).replace("{sender}", ChatColor.DARK_AQUA + sender.getName()));
+				GeneralMethods.sendBrandingMessage(sender, this.toggledOnOtherElementConfirm.replace("{target}", target.getName()).replace("{element}", e.getName().toString() + (e.getType() != null ? e.getType().getBending() : "")), ConfigManager.languageConfig.get().getBoolean("Chat.UseHex") ? e : null);
+				GeneralMethods.sendBrandingMessage(target, this.toggledOnOtherElement.replace("{element}", e.getName().toString() + (e.getType() != null ? e.getType().getBending() : "")).replace("{sender}", ChatColor.DARK_AQUA + sender.getName()), ConfigManager.languageConfig.get().getBoolean("Chat.UseHex") ? e : null);
 			}
 			bPlayer.toggleElement(e);
 		} else {
