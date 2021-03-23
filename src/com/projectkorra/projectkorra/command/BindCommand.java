@@ -90,15 +90,21 @@ public class BindCommand extends PKCommand {
 			return;
 		} else if (coreAbil == null || !bPlayer.canBind(coreAbil)) {
 			if (coreAbil != null && coreAbil.getElement() != Element.AVATAR && !bPlayer.hasElement(coreAbil.getElement())) {
+				Element e = coreAbil.getElement();
+				final String prefix = e.getName().toString();
+				final String suffix = GeneralMethods.getElementSuffix(e, true);
+				
+				final String display = (e == SubElement.HEALING ? prefix.substring(1, 4) : prefix) + suffix;
+				
 				if (coreAbil.getElement() instanceof SubElement) {
 					final SubElement sub = (SubElement) coreAbil.getElement();
 					if (!bPlayer.hasElement(sub.getParentElement())) {
-						GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + ("AEIOUaeiou".indexOf(sub.getParentElement().getName().charAt(0)) > -1 ? this.noElementAE : this.noElement).replace("{element}", sub.getParentElement().getName() + sub.getParentElement().getType().getBender()));
+						GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + ("AEIOUaeiou".indexOf(prefix.charAt(0)) > -1 ? this.noElementAE : this.noElement).replace("{element}", display), coreAbil.getElement());
 					} else {
-						GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + this.noSubElement.replace("{subelement}", coreAbil.getElement().getName() + coreAbil.getElement().getType().getBending()));
+						GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + this.noSubElement.replace("{subelement}", display), coreAbil.getElement());
 					}
 				} else {
-					GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + ("AEIOUaeiou".indexOf(coreAbil.getElement().getName().charAt(0)) > -1 ? this.noElementAE : this.noElement).replace("{element}", coreAbil.getElement().getName() + coreAbil.getElement().getType().getBender()));
+					GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + ("AEIOUaeiou".indexOf(prefix.charAt(0)) > -1 ? this.noElementAE : this.noElement).replace("{element}", display), coreAbil.getElement());
 				}
 			} else {
 				GeneralMethods.sendBrandingMessage(sender, ChatColor.RED + super.noPermissionMessage);
