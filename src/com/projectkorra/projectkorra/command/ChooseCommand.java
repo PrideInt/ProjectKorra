@@ -163,11 +163,16 @@ public class ChooseCommand extends PKCommand {
 		if (element instanceof SubElement) {
 			final SubElement sub = (SubElement) element;
 			bPlayer.addSubElement(sub);
-			final ChatColor color = sub != null ? sub.getColor() : ChatColor.WHITE;
+			
+			final String prefix = element.getName().toString();
+			final String suffix = GeneralMethods.getElementSuffix(element, true);
+			
+			final String display = (element == SubElement.HEALING ? prefix.substring(0, 1).toUpperCase() + prefix.substring(1, 4) : prefix) + suffix;
+			
 			if (!(sender instanceof Player) || !((Player) sender).equals(target)) {
-				GeneralMethods.sendBrandingMessage(sender, color + this.chosenOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName() + color).replace("{element}", sub.getName() + sub.getType().getBender()));
+				GeneralMethods.sendBrandingMessage(sender, this.chosenOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), element);
 			} else {
-				GeneralMethods.sendBrandingMessage(target, color + this.chosenCFW.replace("{element}", sub.getName() + sub.getType().getBender()));
+				GeneralMethods.sendBrandingMessage(target, this.chosenCFW.replace("{element}", display), element);
 			}
 			GeneralMethods.saveSubElements(bPlayer);
 			Bukkit.getServer().getPluginManager().callEvent(new PlayerChangeSubElementEvent(sender, target, sub, com.projectkorra.projectkorra.event.PlayerChangeSubElementEvent.Result.CHOOSE));
@@ -179,19 +184,23 @@ public class ChooseCommand extends PKCommand {
 					bPlayer.addSubElement(sub);
 				}
 			}
+			
+			final String prefix = element.getName().toString();
+			final String suffix = GeneralMethods.getElementSuffix(element, true);
+			
+			final String display = (element == SubElement.HEALING ? prefix.substring(0, 1).toUpperCase() + prefix.substring(1, 4) : prefix) + suffix;
 
-			final ChatColor color = element != null ? element.getColor() : ChatColor.WHITE;
 			if (!(sender instanceof Player) || !((Player) sender).equals(target)) {
 				if (element != Element.AIR && element != Element.EARTH) {
-					GeneralMethods.sendBrandingMessage(sender, color + this.chosenOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName() + color).replace("{element}", element.getName() + element.getType().getBender()));
+					GeneralMethods.sendBrandingMessage(sender, this.chosenOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), element);
 				} else {
-					GeneralMethods.sendBrandingMessage(sender, color + this.chosenOtherAE.replace("{target}", ChatColor.DARK_AQUA + target.getName() + color).replace("{element}", element.getName() + element.getType().getBender()));
+					GeneralMethods.sendBrandingMessage(sender, this.chosenOtherAE.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), element);
 				}
 			} else {
 				if (element != Element.AIR && element != Element.EARTH) {
-					GeneralMethods.sendBrandingMessage(target, color + this.chosenCFW.replace("{element}", element.getName() + element.getType().getBender()));
+					GeneralMethods.sendBrandingMessage(target, this.chosenCFW.replace("{element}", display), element);
 				} else {
-					GeneralMethods.sendBrandingMessage(target, color + this.chosenAE.replace("{element}", element.getName() + element.getType().getBender()));
+					GeneralMethods.sendBrandingMessage(target, this.chosenAE.replace("{element}", display), element);
 				}
 			}
 			GeneralMethods.saveElements(bPlayer);
