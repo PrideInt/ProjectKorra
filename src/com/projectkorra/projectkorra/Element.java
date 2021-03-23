@@ -5,9 +5,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.plugin.Plugin;
 
+import com.projectkorra.projectkorra.Element.ElementType;
+import com.projectkorra.projectkorra.Element.SubElement;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
 
 public class Element {
@@ -110,16 +112,30 @@ public class Element {
 		if (this instanceof SubElement) {
 			name_ = ((SubElement) this).parentElement.name;
 		}
-		return this.getColor() + ChatColor.translateAlternateColorCodes('&', ConfigManager.languageConfig.get().getString("Chat.Prefixes." + name_)) + " ";
+		return this.getColor() + ConfigManager.languageConfig.get().getString("Chat.Prefixes." + name_) + " ";
 	}
 
+	@SuppressWarnings("deprecation")
 	public ChatColor getColor() {
 		final String color = this.plugin.getName().equalsIgnoreCase("ProjectKorra") ? ConfigManager.languageConfig.get().getString("Chat.Colors." + this.name) : this.plugin.getConfig().getString("Chat.Colors." + this.name);
+		final String hexColor = this.plugin.getName().equalsIgnoreCase("ProjectKorra") ? ConfigManager.languageConfig.get().getString("Chat.Hex." + this.name) : this.plugin.getConfig().getString("Chat.Hex." + this.name);		
+		
+		if (ConfigManager.languageConfig.get().getBoolean("Chat.UseHex")) {
+			return hexColor != null ? ChatColor.of(hexColor) : ChatColor.WHITE;
+		}
+		
 		return color != null ? ChatColor.valueOf(color) : ChatColor.WHITE;
 	}
 
+	@SuppressWarnings("deprecation")
 	public ChatColor getSubColor() {
 		final String color = this.plugin.getName().equalsIgnoreCase("ProjectKorra") ? ConfigManager.languageConfig.get().getString("Chat.Colors." + this.name + "Sub") : this.plugin.getConfig().getString("Chat.Colors." + this.name + "Sub");
+		final String hexColor = this.plugin.getName().equalsIgnoreCase("ProjectKorra") ? ConfigManager.languageConfig.get().getString("Chat.Hex." + this.name + "Sub") : this.plugin.getConfig().getString("Chat.Hex." + this.name + "Sub");
+		
+		if (ConfigManager.languageConfig.get().getBoolean("Chat.UseHex")) {
+			return hexColor != null ? ChatColor.of(hexColor) : ChatColor.WHITE;
+		}
+		
 		return color != null ? ChatColor.valueOf(color) : ChatColor.WHITE;
 	}
 
@@ -336,9 +352,17 @@ public class Element {
 			this.parentElement = parentElement;
 		}
 
+		@SuppressWarnings("deprecation")
 		@Override
 		public ChatColor getColor() {
 			final String color = this.getPlugin().getName().equalsIgnoreCase("ProjectKorra") ? ConfigManager.languageConfig.get().getString("Chat.Colors." + this.parentElement.name + "Sub") : this.getPlugin().getConfig().getString("Chat.Colors." + this.parentElement.name + "Sub");
+			
+			final String hexColor = this.getPlugin().getName().equalsIgnoreCase("ProjectKorra") ? ConfigManager.languageConfig.get().getString("Chat.Hex." + this.parentElement.name + "Sub") : this.getPlugin().getConfig().getString("Chat.Hex." + this.parentElement.name + "Sub");		
+			
+			if (ConfigManager.languageConfig.get().getBoolean("Chat.UseHex")) {
+				return hexColor != null ? ChatColor.of(hexColor) : ChatColor.WHITE;
+			}
+			
 			return color != null ? ChatColor.valueOf(color) : ChatColor.WHITE;
 		}
 
