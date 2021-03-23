@@ -74,6 +74,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
+import org.bukkit.boss.BossBar;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
@@ -218,7 +219,7 @@ public class GeneralMethods {
 		bPlayer.getAbilities().put(slot, ability);
 
 		if (coreAbil != null) {
-			GeneralMethods.sendBrandingMessage(player, coreAbil.getElement().getColor() + ConfigManager.languageConfig.get().getString("Commands.Bind.SuccessfullyBound").replace("{ability}", ability).replace("{slot}", String.valueOf(slot)));
+			GeneralMethods.sendBrandingMessage(player, ConfigManager.languageConfig.get().getString("Commands.Bind.SuccessfullyBound").replace("{ability}", ability).replace("{slot}", String.valueOf(slot)), coreAbil.getElement());
 		}
 		saveAbility(bPlayer, slot, ability);
 	}
@@ -447,6 +448,9 @@ public class GeneralMethods {
 						}
 						if (split[0].contains("c")) {
 							subelements.add(Element.COMBUSTION);
+						}
+						if (split[0].contains("er")) {
+							subelements.add(Element.READING);
 						}
 						if (split[0].contains("l")) {
 							subelements.add(Element.LIGHTNING);
@@ -679,7 +683,15 @@ public class GeneralMethods {
 			displayedMessage = "";
 		}
 
-		ActionBar.sendActionBar(displayedMessage, player);
+		BossBar removebar = PKListener.getBossBar().get(player.getUniqueId().toString());
+		
+		if (PKListener.getBossBar().containsKey(player.getUniqueId().toString())) {
+			if (displayedMessage == null || displayedMessage.isEmpty() || displayedMessage.equalsIgnoreCase("") || !bPlayer.isToggled()) {
+            	removebar.setVisible(false);
+            	removebar.removeAll();
+            	PKListener.getBossBar().remove(removebar);
+    		}
+		}
 	}
 
 	public static float getAbsorbationHealth(final Player player) {
@@ -2351,15 +2363,16 @@ public class GeneralMethods {
 		return (player.getLocation().getBlockY() == block.getLocation().getBlockY() && (Math.abs(player.getLocation().getX() - block.getLocation().add(0.5, 0.0, 0.5).getX()) < checkDistance) && (Math.abs(player.getLocation().getZ() - block.getLocation().add(0.5, 0.0, 0.5).getZ()) < checkDistance));
 	}
 
-	public static void sendBrandingMessage(final CommandSender sender, final String message) {
-		ChatColor color;
+	@SuppressWarnings("deprecation")
+	public static void sendBrandingMessage(final CommandSender sender, final String message, final Element element) {
+		net.md_5.bungee.api.ChatColor color;
 		try {
-			color = ChatColor.valueOf(ConfigManager.languageConfig.get().getString("Chat.Branding.Color").toUpperCase());
+			color = net.md_5.bungee.api.ChatColor.valueOf(ConfigManager.languageConfig.get().getString("Chat.Branding.Color").toUpperCase());
 		} catch (final IllegalArgumentException exception) {
-			color = ChatColor.GOLD;
+			color = net.md_5.bungee.api.ChatColor.GOLD;
 		}
 
-		final String prefix = ChatColor.translateAlternateColorCodes('&', ConfigManager.languageConfig.get().getString("Chat.Branding.ChatPrefix.Prefix")) + color + "ProjectKorra" + ChatColor.translateAlternateColorCodes('&', ConfigManager.languageConfig.get().getString("Chat.Branding.ChatPrefix.Suffix"));
+		final String prefix = net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', ConfigManager.languageConfig.get().getString("Chat.Branding.ChatPrefix.Prefix")) + color + "ProjectKorra" + ChatColor.translateAlternateColorCodes('&', ConfigManager.languageConfig.get().getString("Chat.Branding.ChatPrefix.Suffix"));
 		if (!(sender instanceof Player)) {
 			sender.sendMessage(prefix + message);
 		} else {
@@ -2376,8 +2389,8 @@ public class GeneralMethods {
 			String newMessage = "";
 			for (int i = 0; i < message.split("").length; i++) {
 				final String c = message.split("")[i];
-				if (c.equalsIgnoreCase("§")) {
-					lastColor = "§" + message.split("")[i + 1];
+				if (c.equalsIgnoreCase("")) {
+					lastColor = "" + message.split("")[i + 1];
 					newMessage = newMessage + c;
 				} else if (c.equalsIgnoreCase(" ")) { // Add color every word
 					newMessage = newMessage + " " + lastColor;
@@ -2387,6 +2400,7 @@ public class GeneralMethods {
 			}
 
 			final TextComponent messageComponent = new TextComponent(newMessage);
+			if (element != null) messageComponent.setColor(element.getColor());
 			((Player) sender).spigot().sendMessage(new TextComponent(prefixComponent, messageComponent));
 			/*
 			 * boolean prefixSent = false; for (String msg :
@@ -2398,6 +2412,34 @@ public class GeneralMethods {
 			 */
 
 		}
+	}
+	
+	public static void sendBrandingMessage(final CommandSender sender, final String message) {
+		sendBrandingMessage(sender, message, null);
+	}
+	
+	public static String getElementSuffix(Element element, boolean endsInEr) {
+		String suffix;
+		if (endsInEr) {
+			if (element == Element.FIRE || element == Element.EARTH || element == Element.WATER || element == Element.AIR || element == Element.CHI) {
+				suffix = element.getType().getBender();
+			} else if (element == SubElement.HEALING) {
+				suffix = "er";
+			} else {
+				suffix = "bender";
+			}
+		} else {
+			if (element instanceof SubElement) {
+				if (element == SubElement.HEALING) {
+					suffix = "ing";
+				} else {
+					suffix = "bending";
+				}
+			} else {
+				suffix = element.getType().getBending();
+			}
+		}
+		return suffix;
 	}
 
 	public static void startCacheCleaner(final double period) {
