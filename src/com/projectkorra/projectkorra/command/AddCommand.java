@@ -181,7 +181,7 @@ public class AddCommand extends PKCommand {
 
 				// send the message.
 				if (!(sender instanceof Player) || !((Player) sender).equals(target)) {
-					if (e != Element.AIR && e != Element.EARTH) {
+					if (e != Element.AIR && e != Element.EARTH && e != Element.BLUE_FIRE) {
 						GeneralMethods.sendBrandingMessage(sender, this.addedOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), e);
 						GeneralMethods.sendBrandingMessage(target, this.addedCFW.replace("{element}", display), e);
 					} else {
@@ -277,7 +277,6 @@ public class AddCommand extends PKCommand {
 			l.add("Sand");
 			l.add("Spiritual");
 			l.add("BlueFire");
-			l.add("Energy reading");
 			for (final SubElement e : Element.getAddonSubElements()) {
 				l.add(e.getName());
 			}
