@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -17,6 +16,8 @@ import com.projectkorra.projectkorra.configuration.ConfigManager;
 import com.projectkorra.projectkorra.event.PlayerChangeElementEvent;
 import com.projectkorra.projectkorra.event.PlayerChangeElementEvent.Result;
 import com.projectkorra.projectkorra.event.PlayerChangeSubElementEvent;
+
+import net.md_5.bungee.api.ChatColor;
 
 /**
  * Executor for /bending add. Extends {@link PKCommand}.
@@ -173,22 +174,25 @@ public class AddCommand extends PKCommand {
 						bPlayer.addSubElement(sub);
 					}
 				}
+				final String prefix = e.getName().toString();
+				final String suffix = GeneralMethods.getElementSuffix(e, true);
+				
+				final String display = (e == SubElement.HEALING ? prefix.substring(1, 4) : prefix) + suffix;
 
 				// send the message.
-				final ChatColor color = e.getColor();
 				if (!(sender instanceof Player) || !((Player) sender).equals(target)) {
-					if (e != Element.AIR && e != Element.EARTH && e != Element.BLUE_FIRE) {
-						GeneralMethods.sendBrandingMessage(sender, color + this.addedOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName() + color).replace("{element}", e.toString() + e.getType().getBender()));
-						GeneralMethods.sendBrandingMessage(target, color + this.addedCFW.replace("{element}", e.toString() + e.getType().getBender()));
+					if (e != Element.AIR && e != Element.EARTH) {
+						GeneralMethods.sendBrandingMessage(sender, this.addedOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), e);
+						GeneralMethods.sendBrandingMessage(target, this.addedCFW.replace("{element}", display), e);
 					} else {
-						GeneralMethods.sendBrandingMessage(sender, color + this.addedOtherAE.replace("{target}", ChatColor.DARK_AQUA + target.getName() + color).replace("{element}", e.toString() + e.getType().getBender()));
-						GeneralMethods.sendBrandingMessage(target, color + this.addedAE.replace("{element}", e.toString() + e.getType().getBender()));
+						GeneralMethods.sendBrandingMessage(sender, this.addedOtherAE.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), e);
+						GeneralMethods.sendBrandingMessage(target, this.addedAE.replace("{element}", display), e);
 					}
 				} else {
 					if (e != Element.AIR && e != Element.EARTH) {
-						GeneralMethods.sendBrandingMessage(target, color + this.addedCFW.replace("{element}", e.toString() + e.getType().getBender()));
+						GeneralMethods.sendBrandingMessage(target, this.addedCFW.replace("{element}", display), e);
 					} else {
-						GeneralMethods.sendBrandingMessage(target, color + this.addedAE.replace("{element}", e.toString() + e.getType().getBender()));
+						GeneralMethods.sendBrandingMessage(target, this.addedAE.replace("{element}", display), e);
 					}
 
 				}
@@ -209,20 +213,24 @@ public class AddCommand extends PKCommand {
 					return;
 				}
 				bPlayer.addSubElement(sub);
-				final ChatColor color = e.getColor();
+				
+				final String prefix = e.getName().toString();
+				final String suffix = GeneralMethods.getElementSuffix(e, true);
+				
+				final String display = (e == SubElement.HEALING ? prefix.substring(0, 1).toUpperCase() + prefix.substring(1, 4) : prefix) + suffix;
 
 				if (!(sender instanceof Player) || !((Player) sender).equals(target)) {
 					if (e != Element.AIR && e != Element.EARTH) {
-						GeneralMethods.sendBrandingMessage(sender, color + this.addedOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName() + color).replace("{element}", sub.toString() + sub.getType().getBender()));
+						GeneralMethods.sendBrandingMessage(sender, this.addedOtherCFW.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), e);
 					} else {
-						GeneralMethods.sendBrandingMessage(sender, color + this.addedOtherAE.replace("{target}", ChatColor.DARK_AQUA + target.getName() + color).replace("{element}", sub.toString() + sub.getType().getBender()));
+						GeneralMethods.sendBrandingMessage(sender, this.addedOtherAE.replace("{target}", ChatColor.DARK_AQUA + target.getName()).replace("{element}", display), e);
 					}
 
 				} else {
 					if (e != Element.AIR && e != Element.EARTH) {
-						GeneralMethods.sendBrandingMessage(target, color + this.addedCFW.replace("{element}", sub.toString() + sub.getType().getBender()));
+						GeneralMethods.sendBrandingMessage(target, this.addedCFW.replace("{element}", display), e);
 					} else {
-						GeneralMethods.sendBrandingMessage(target, color + this.addedAE.replace("{element}", sub.toString() + sub.getType().getBender()));
+						GeneralMethods.sendBrandingMessage(target, this.addedAE.replace("{element}", display), e);
 					}
 				}
 				GeneralMethods.saveSubElements(bPlayer);
@@ -269,6 +277,7 @@ public class AddCommand extends PKCommand {
 			l.add("Sand");
 			l.add("Spiritual");
 			l.add("BlueFire");
+			l.add("Energy reading");
 			for (final SubElement e : Element.getAddonSubElements()) {
 				l.add(e.getName());
 			}
