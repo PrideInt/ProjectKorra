@@ -50,6 +50,7 @@ public class ConfigManager {
 
 			config.addDefault("Chat.Enable", true);
 			config.addDefault("Chat.Format", "<name>: <message>");
+			config.addDefault("Chat.UseHex", true);
 			config.addDefault("Chat.Colors.Avatar", "DARK_PURPLE");
 			config.addDefault("Chat.Colors.Air", "GRAY");
 			config.addDefault("Chat.Colors.AirSub", "DARK_GRAY");
@@ -60,6 +61,16 @@ public class ConfigManager {
 			config.addDefault("Chat.Colors.Fire", "RED");
 			config.addDefault("Chat.Colors.FireSub", "DARK_RED");
 			config.addDefault("Chat.Colors.Chi", "GOLD");
+			config.addDefault("Chat.Hex.Avatar", "#AA00AA");
+			config.addDefault("Chat.Hex.Air", "#AAAAAA");
+			config.addDefault("Chat.Hex.AirSub", "#555555");
+			config.addDefault("Chat.Hex.Water", "#55FFFF");
+			config.addDefault("Chat.Hex.WaterSub", "#00AAAA");
+			config.addDefault("Chat.Hex.Earth", "#55FF55");
+			config.addDefault("Chat.Hex.EarthSub", "#00AA00");
+			config.addDefault("Chat.Hex.Fire", "#FF5555");
+			config.addDefault("Chat.Hex.FireSub", "#AA0000");
+			config.addDefault("Chat.Hex.Chi", "#FFAA00");
 			config.addDefault("Chat.Branding.JoinMessage.Enabled", true);
 			config.addDefault("Chat.Branding.AutoAnnouncer.Enabled", true);
 			config.addDefault("Chat.Branding.AutoAnnouncer.Interval", 30);
