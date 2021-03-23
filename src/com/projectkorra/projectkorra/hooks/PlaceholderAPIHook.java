@@ -2,7 +2,6 @@ package com.projectkorra.projectkorra.hooks;
 
 import static java.util.stream.Collectors.joining;
 
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.BendingPlayer;
@@ -10,6 +9,7 @@ import com.projectkorra.projectkorra.Element;
 import com.projectkorra.projectkorra.ProjectKorra;
 import com.projectkorra.projectkorra.ability.CoreAbility;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import net.md_5.bungee.api.ChatColor;
 
 public class PlaceholderAPIHook extends PlaceholderExpansion {
 
