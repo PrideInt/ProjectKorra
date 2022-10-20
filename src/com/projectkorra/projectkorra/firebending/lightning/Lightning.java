@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.projectkorra.projectkorra.ability.CoreAbility;
+import com.projectkorra.projectkorra.event.AbilityLightningImpactEvent;
 import com.projectkorra.projectkorra.firebending.FireJet;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -34,12 +37,16 @@ public class Lightning extends LightningAbility {
 	private boolean charged;
 	private boolean hitWater;
 	private boolean hitIce;
+	private boolean hitCopper;
 	private boolean selfHitWater;
 	private boolean selfHitClose;
 	private boolean allowOnFireJet;
 	@Attribute("ArcOnIce")
 	private boolean arcOnIce;
+	@Attribute("ArcOnCopper")
+	private boolean arcOnCopper;
 	private int waterArcs;
+	private int eventCalls;
 	@Attribute(Attribute.RANGE)
 	private double range;
 	@Attribute(Attribute.CHARGE_DURATION)
@@ -68,6 +75,7 @@ public class Lightning extends LightningAbility {
 	private State state;
 	private Location origin;
 	private Location destination;
+	private AbilityLightningImpactEvent[] lightningImpactEvent; // To minimize the amount of events called
 	private ArrayList<Entity> affectedEntities;
 	private ArrayList<Arc> arcs;
 	private ArrayList<BukkitRunnable> tasks;
@@ -88,7 +96,9 @@ public class Lightning extends LightningAbility {
 		this.charged = false;
 		this.hitWater = false;
 		this.hitIce = false;
+		this.hitCopper = false;
 		this.state = State.START;
+		this.lightningImpactEvent = new AbilityLightningImpactEvent[3];
 		this.affectedEntities = new ArrayList<>();
 		this.arcs = new ArrayList<>();
 		this.tasks = new ArrayList<>();
@@ -97,6 +107,7 @@ public class Lightning extends LightningAbility {
 		this.selfHitWater = getConfig().getBoolean("Abilities.Fire.Lightning.SelfHitWater");
 		this.selfHitClose = getConfig().getBoolean("Abilities.Fire.Lightning.SelfHitClose");
 		this.arcOnIce = getConfig().getBoolean("Abilities.Fire.Lightning.ArcOnIce");
+		this.arcOnCopper = getConfig().getBoolean("Abilities.Fire.Lightning.ArcOnCopper");
 		this.range = applyModifiersRange(getConfig().getDouble("Abilities.Fire.Lightning.Range"));
 		this.damage = applyModifiersDamage(getConfig().getDouble("Abilities.Fire.Lightning.Damage"));
 		this.maxArcAngle = getConfig().getDouble("Abilities.Fire.Lightning.MaxArcAngle");
@@ -168,6 +179,27 @@ public class Lightning extends LightningAbility {
 		}
 		return false;
 	}
+	
+	/**
+	 * Calls AbilityLightningImpactEvent
+	 *
+	 * @param event the AbilityLightningImpactEvent event to be called
+	 */
+	private void callLightningImpactEvent(final AbilityLightningImpactEvent event) {
+		if (this.eventCalls < this.lightningImpactEvent.length) {
+			this.lightningImpactEvent[this.eventCalls] = event;
+			Bukkit.getServer().getPluginManager().callEvent(event);
+			this.eventCalls++;
+		}
+	}
+	
+	private boolean isCopper(final Block block) {
+		return block.getType().name().contains("COPPER");
+	}
+	
+	private boolean isLightningRod(final Block block) {
+		return GeneralMethods.getMCVersion() >= 1170 && block.getType() == Material.valueOf("LIGHTNING_ROD");
+	}
 
 	/**
 	 * Progresses the instance of this ability by 1 tick. This is the heart of
@@ -218,7 +250,23 @@ public class Lightning extends LightningAbility {
 					if (target != null) {
 						this.destination = target.getLocation();
 					} else {
-						this.destination = this.player.getEyeLocation().add(this.player.getEyeLocation().getDirection().normalize().multiply(this.range));
+						Block targetBlock = GeneralMethods.getTargetedLocation(this.player, this.range, false).getBlock();
+						boolean foundRod = isLightningRod(targetBlock);
+						
+						if (!foundRod) {
+							for (Block block : GeneralMethods.getBlocksAroundPoint(targetBlock.getLocation(), 1.25)) {
+								if (isLightningRod(block)) {
+									foundRod = true;
+									targetBlock = block;
+									break;
+								}
+							}
+						}
+						if (foundRod) {
+							this.destination = targetBlock.getLocation().clone().add(0.5, 0.5, 0.5);
+						} else {
+							this.destination = this.player.getEyeLocation().add(this.player.getEyeLocation().getDirection().normalize().multiply(this.range));
+						}
 					}
 				}
 			} else {
@@ -260,6 +308,7 @@ public class Lightning extends LightningAbility {
 					final Location dest = arc.getAnimationLocations().get(j + 1).getLocation().clone();
 					if (this.selfHitClose && this.player.getLocation().distanceSquared(iterLoc) < 9 && !this.isTransparentForLightning(this.player, iterLoc.getBlock()) && !this.affectedEntities.contains(this.player)) {
 						this.affectedEntities.add(this.player);
+						callLightningImpactEvent(new AbilityLightningImpactEvent(this, this.player));
 						this.electrocute(this.player);
 					}
 
@@ -511,7 +560,8 @@ public class Lightning extends LightningAbility {
 					playLightningbendingSound(location);
 				}
 
-				if (!Lightning.this.isTransparentForLightning(Lightning.this.player, this.location.getBlock())) {
+				if (!Lightning.this.isTransparentForLightning(Lightning.this.player, this.location.getBlock()) && !isCopper(this.location.getBlock())) {
+					callLightningImpactEvent(new AbilityLightningImpactEvent(Lightning.this, this.location.getBlock()));
 					this.arc.cancel();
 					return;
 				}
@@ -520,12 +570,18 @@ public class Lightning extends LightningAbility {
 				// The later ticks are just for visual purposes.
 				Lightning.this.locations.add(block.getLocation());
 
-				// Handle Water electrocution.
-				if (!Lightning.this.hitWater && (isWater(block) || (Lightning.this.arcOnIce && isIce(block)))) {
-					Lightning.this.hitWater = true;
-					if (isIce(block)) {
-						Lightning.this.hitIce = true;
+				// Handle Water and Copper electrocution.
+				if ((!Lightning.this.hitWater && isWater(block) || (!Lightning.this.hitCopper && Lightning.this.arcOnCopper && isCopper(block)) || (Lightning.this.arcOnIce && isIce(block)))) {
+					if (isWater(block) || isIce(block)) {
+						Lightning.this.hitWater = true;
+						if (isIce(block)) {
+							Lightning.this.hitIce = true;
+						}
+					} else if (isCopper(block)) {
+						Lightning.this.hitCopper = true;
+						Lightning.this.waterArcRange = 2;
 					}
+					callLightningImpactEvent(new AbilityLightningImpactEvent(Lightning.this, block));
 
 					for (int i = 0; i < this.waterArcs; i++) {
 						final Location origin = this.location.clone();
@@ -540,7 +596,7 @@ public class Lightning extends LightningAbility {
 				for (final Entity entity : GeneralMethods.getEntitiesAroundPoint(this.location, 2.5)) {
 
 					// If the player is in water we will electrocute them only if they are standing in water. If the lightning hit ice we can electrocute them all the time.
-					if (entity.equals(Lightning.this.player) && !(this.selfHitWater && Lightning.this.hitWater && isWater(Lightning.this.player.getLocation().getBlock())) && !(this.selfHitWater && Lightning.this.hitIce)) {
+					if (entity.equals(Lightning.this.player) && !(this.selfHitWater && Lightning.this.hitWater && isWater(Lightning.this.player.getLocation().getBlock())) && !(this.selfHitWater && Lightning.this.hitCopper) && !(this.selfHitWater && Lightning.this.hitIce)) {
 						continue;
 					}
 
@@ -558,7 +614,8 @@ public class Lightning extends LightningAbility {
 								return;
 							}
 						}
-
+						
+						callLightningImpactEvent(new AbilityLightningImpactEvent(Lightning.this, lent));
 						Lightning.this.electrocute(lent);
 
 						// Handle Chain Lightning.
@@ -680,6 +737,14 @@ public class Lightning extends LightningAbility {
 	public void setHitIce(final boolean hitIce) {
 		this.hitIce = hitIce;
 	}
+	
+	public boolean isHitCopper() {
+		return this.hitCopper;
+	}
+	
+	public void setHitCopper(final boolean hitCopper) {
+		this.hitCopper = hitCopper;
+	}
 
 	public boolean isSelfHitWater() {
 		return this.selfHitWater;
@@ -703,6 +768,14 @@ public class Lightning extends LightningAbility {
 
 	public void setArcOnIce(final boolean arcOnIce) {
 		this.arcOnIce = arcOnIce;
+	}
+	
+	public boolean isArcOnCopper() {
+		return this.arcOnCopper;
+	}
+	
+	public void setArcOnCopper(final boolean arcOnCopper) {
+		this.arcOnCopper = arcOnCopper;
 	}
 
 	public int getWaterArcs() {
@@ -807,6 +880,10 @@ public class Lightning extends LightningAbility {
 
 	public void setParticleRotation(final double particleRotation) {
 		this.particleRotation = particleRotation;
+	}
+	
+	public AbilityLightningImpactEvent[] getLightningImpactEvents() {
+		return this.lightningImpactEvent;
 	}
 
 	public State getState() {
