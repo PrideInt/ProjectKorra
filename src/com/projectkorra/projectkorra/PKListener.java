@@ -71,7 +71,6 @@ import com.projectkorra.projectkorra.earthbending.metal.MetalClips;
 import com.projectkorra.projectkorra.earthbending.passive.DensityShift;
 import com.projectkorra.projectkorra.earthbending.passive.EarthPassive;
 import com.projectkorra.projectkorra.earthbending.passive.FerroControl;
-import com.projectkorra.projectkorra.event.AbilityLightningImpactEvent;
 import com.projectkorra.projectkorra.event.EntityBendingDeathEvent;
 import com.projectkorra.projectkorra.event.HorizontalVelocityChangeEvent;
 import com.projectkorra.projectkorra.event.PlayerBindChangeEvent;
@@ -137,19 +136,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.Statistic;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.Powerable;
-import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.MushroomCow;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Turtle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -2015,50 +2009,6 @@ public class PKListener implements Listener {
 		}
 		if (!event.getNewStance().isEmpty()) {
 			BendingBoardManager.updateBoard(player, event.getNewStance(), false, 0);
-		}
-	}
-	
-	@EventHandler
-	public void onLightningAbilityImpact(final AbilityLightningImpactEvent event) {
-		Block block = event.getBlock();
-		Entity entity = event.getEntity();
-		
-		if (block != null) {
-			if (GeneralMethods.getMCVersion() >= 1170 && block.getType() == Material.valueOf("LIGHTNING_ROD")) {
-				block.getWorld().spawnParticle(Particle.valueOf("ELECTRIC_SPARK"), block.getLocation().clone().add(0.5, 0.5, 0.5), 6, 0.125, 0.125, 0.125, 0.05);
-				
-				Powerable powerable = (Powerable) block.getBlockData();
-				powerable.setPowered(true);
-				block.setBlockData(powerable);
-				
-				Bukkit.getScheduler().runTaskLater(ProjectKorra.plugin, () -> {
-					powerable.setPowered(false);
-					block.setBlockData(powerable);
-				}, 8);
-			}
-		} else if (entity != null && ConfigManager.getConfig().getBoolean("Abilities.Fire.Lightning.TransformMobs")) {
-			switch (entity.getType()) {
-				case CREEPER:
-					((Creeper) entity).setPowered(true);
-					break;
-				case VILLAGER:
-					entity.getWorld().spawnEntity(entity.getLocation(), EntityType.WITCH);
-					entity.remove();
-					break;
-				case PIG:
-					entity.getWorld().spawnEntity(entity.getLocation(), EntityType.ZOMBIFIED_PIGLIN);
-					entity.remove();
-					break;
-				case MUSHROOM_COW:
-					MushroomCow cow = (MushroomCow) entity;
-					cow.setVariant(cow.getVariant() == MushroomCow.Variant.RED ? MushroomCow.Variant.BROWN : MushroomCow.Variant.RED);
-					break;
-				case TURTLE:
-					entity.getWorld().dropItem(entity.getLocation(), new ItemStack(Material.BOWL, 1));
-					((Turtle) entity).setHealth(0);
-					break;
-				default: break;
-			}
 		}
 	}
 

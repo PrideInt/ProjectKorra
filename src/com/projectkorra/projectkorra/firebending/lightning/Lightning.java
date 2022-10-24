@@ -2,18 +2,25 @@ package com.projectkorra.projectkorra.firebending.lightning;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.projectkorra.projectkorra.ability.CoreAbility;
-import com.projectkorra.projectkorra.event.AbilityLightningImpactEvent;
 import com.projectkorra.projectkorra.firebending.FireJet;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Powerable;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.MushroomCow;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -41,12 +48,14 @@ public class Lightning extends LightningAbility {
 	private boolean selfHitWater;
 	private boolean selfHitClose;
 	private boolean allowOnFireJet;
+	private boolean transformMobs;
+	private boolean chargeCreeper;
+	private boolean chainLightningRods;
 	@Attribute("ArcOnIce")
 	private boolean arcOnIce;
 	@Attribute("ArcOnCopper")
 	private boolean arcOnCopper;
 	private int waterArcs;
-	private int eventCalls;
 	@Attribute(Attribute.RANGE)
 	private double range;
 	@Attribute(Attribute.CHARGE_DURATION)
@@ -75,11 +84,13 @@ public class Lightning extends LightningAbility {
 	private State state;
 	private Location origin;
 	private Location destination;
-	private AbilityLightningImpactEvent[] lightningImpactEvent; // To minimize the amount of events called
 	private ArrayList<Entity> affectedEntities;
 	private ArrayList<Arc> arcs;
 	private ArrayList<BukkitRunnable> tasks;
 	private ArrayList<Location> locations;
+	private static final Set<EntityType> LIGHTNING_AFFECTED = Set.of(EntityType.CREEPER, EntityType.VILLAGER,
+			EntityType.PIG, EntityType.MUSHROOM_COW, EntityType.TURTLE, EntityType.SKELETON_HORSE
+	);
 
 	public Lightning(final Player player) {
 		super(player);
@@ -98,7 +109,6 @@ public class Lightning extends LightningAbility {
 		this.hitIce = false;
 		this.hitCopper = false;
 		this.state = State.START;
-		this.lightningImpactEvent = new AbilityLightningImpactEvent[3];
 		this.affectedEntities = new ArrayList<>();
 		this.arcs = new ArrayList<>();
 		this.tasks = new ArrayList<>();
@@ -122,6 +132,9 @@ public class Lightning extends LightningAbility {
 		this.chargeTime = applyInverseModifiers(getConfig().getLong("Abilities.Fire.Lightning.ChargeTime"));
 		this.cooldown = applyModifiersCooldown(getConfig().getLong("Abilities.Fire.Lightning.Cooldown"));
 		this.allowOnFireJet = getConfig().getBoolean("Abilities.Fire.Lightning.AllowOnFireJet");
+		this.transformMobs = getConfig().getBoolean("Abilities.Fire.Lightning.TransformMobs");
+		this.chargeCreeper = getConfig().getBoolean("Abilities.Fire.Lightning.ChargeCreeper");
+		this.chainLightningRods = getConfig().getBoolean("Abilities.Fire.Lightning.ChainLightningRods");
 
 		/*this.range = this.getDayFactor(this.range);
 		this.subArcChance = this.getDayFactor(this.subArcChance);
@@ -181,16 +194,87 @@ public class Lightning extends LightningAbility {
 	}
 	
 	/**
-	 * Calls AbilityLightningImpactEvent
+	 * Transforms mobs as vanilla Minecraft lightning does, considers LIGHTNING_AFFECTED mobs
 	 *
-	 * @param event the AbilityLightningImpactEvent event to be called
+	 * @param entity Entity to transform
 	 */
-	private void callLightningImpactEvent(final AbilityLightningImpactEvent event) {
-		if (this.eventCalls < this.lightningImpactEvent.length) {
-			this.lightningImpactEvent[this.eventCalls] = event;
-			Bukkit.getServer().getPluginManager().callEvent(event);
-			this.eventCalls++;
+	private void transformMobs(final LivingEntity entity) {
+		if ((!this.transformMobs && !this.chargeCreeper) || !LIGHTNING_AFFECTED.contains(entity.getType())) {
+			return;
+		} else if (!this.transformMobs && this.chargeCreeper && entity.getType() == EntityType.CREEPER) {
+			((Creeper) entity).setPowered(true);
+			return;
+		} else if (this.transformMobs && LIGHTNING_AFFECTED.contains(entity.getType())) {
+			switch (entity.getType()) {
+				case CREEPER:
+					((Creeper) entity).setPowered(true);
+					break;
+				case VILLAGER:
+					entity.getWorld().spawnEntity(entity.getLocation(), EntityType.WITCH);
+					entity.remove();
+					break;
+				case PIG:
+					entity.getWorld().spawnEntity(entity.getLocation(), EntityType.ZOMBIFIED_PIGLIN);
+					entity.remove();
+					break;
+				case MUSHROOM_COW:
+					MushroomCow cow = (MushroomCow) entity;
+					cow.setVariant(cow.getVariant() == MushroomCow.Variant.RED ? MushroomCow.Variant.BROWN : MushroomCow.Variant.RED);
+					break;
+				case TURTLE:
+					entity.getWorld().dropItem(entity.getLocation(), new ItemStack(Material.BOWL, 1));
+					entity.setHealth(0);
+					break;
+				default:
+					break;
+			}
+			return;
 		}
+	}
+	
+	/**
+	 * Charges lightning rods. If ChainLightningRods is enabled, it will power all lightning rods
+	 * below the block that was hit
+	 *
+	 * @param block
+	 */
+	private void powerLightningRods(final Block block) {
+		if (isLightningRod(block)) {
+			block.getWorld().spawnParticle(Particle.valueOf("ELECTRIC_SPARK"), block.getLocation().clone().add(0.5, 0.5, 0.5), 6, 0.125, 0.125, 0.125, 0.05);
+			
+			List<Block> blocks = new ArrayList<>();
+			
+			if (this.chainLightningRods) {
+				Block down = block.getRelative(BlockFace.DOWN);
+				
+				if (isLightningRod(down)) {
+					while (isLightningRod(down)) {
+						updateLightningRod(down, true);
+						
+						blocks.add(down);
+						
+						down = down.getRelative(BlockFace.DOWN);
+					}
+				} else {
+					updateLightningRod(block, true);
+				}
+			}
+			Bukkit.getScheduler().runTaskLater(ProjectKorra.plugin, () -> {
+				if (blocks.isEmpty()) {
+					updateLightningRod(block, false);
+					return;
+				}
+				for (Block powerable : blocks) {
+					updateLightningRod(powerable, false);
+				}
+			}, 8);
+		}
+	}
+	
+	private void updateLightningRod(final Block block, final boolean powered) {
+		Powerable powerable = (Powerable) block.getBlockData();
+		powerable.setPowered(powered);
+		block.setBlockData(powerable);
 	}
 	
 	private boolean isCopper(final Block block) {
@@ -308,7 +392,6 @@ public class Lightning extends LightningAbility {
 					final Location dest = arc.getAnimationLocations().get(j + 1).getLocation().clone();
 					if (this.selfHitClose && this.player.getLocation().distanceSquared(iterLoc) < 9 && !this.isTransparentForLightning(this.player, iterLoc.getBlock()) && !this.affectedEntities.contains(this.player)) {
 						this.affectedEntities.add(this.player);
-						callLightningImpactEvent(new AbilityLightningImpactEvent(this, this.player));
 						this.electrocute(this.player);
 					}
 
@@ -561,7 +644,7 @@ public class Lightning extends LightningAbility {
 				}
 
 				if (!Lightning.this.isTransparentForLightning(Lightning.this.player, this.location.getBlock()) && !isCopper(this.location.getBlock())) {
-					callLightningImpactEvent(new AbilityLightningImpactEvent(Lightning.this, this.location.getBlock()));
+					powerLightningRods(this.location.getBlock());
 					this.arc.cancel();
 					return;
 				}
@@ -581,7 +664,7 @@ public class Lightning extends LightningAbility {
 						Lightning.this.hitCopper = true;
 						Lightning.this.waterArcRange = 2;
 					}
-					callLightningImpactEvent(new AbilityLightningImpactEvent(Lightning.this, block));
+					powerLightningRods(block);
 
 					for (int i = 0; i < this.waterArcs; i++) {
 						final Location origin = this.location.clone();
@@ -615,7 +698,7 @@ public class Lightning extends LightningAbility {
 							}
 						}
 						
-						callLightningImpactEvent(new AbilityLightningImpactEvent(Lightning.this, lent));
+						Lightning.this.transformMobs(lent);
 						Lightning.this.electrocute(lent);
 
 						// Handle Chain Lightning.
@@ -880,10 +963,6 @@ public class Lightning extends LightningAbility {
 
 	public void setParticleRotation(final double particleRotation) {
 		this.particleRotation = particleRotation;
-	}
-	
-	public AbilityLightningImpactEvent[] getLightningImpactEvents() {
-		return this.lightningImpactEvent;
 	}
 
 	public State getState() {
